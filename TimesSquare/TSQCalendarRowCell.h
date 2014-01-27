@@ -8,12 +8,14 @@
 //  which Square, Inc. licenses this file to you.
 
 #import "TSQCalendarCell.h"
-
+#import "OSHighlightColour.h"
 /** The `TSQCalendarRowCell` class is a cell that represents one week in the calendar.
  
  Each of the seven columns can represent a day that's in this month, a day that's not in this month, a selected day, today, or an unselected day. The cell uses several images placed strategically to achieve the effect.
  */
 @interface TSQCalendarRowCell : TSQCalendarCell
+
+@property (nonatomic, strong) NSArray *dayButtons;
 
 /** @name Images */
 
@@ -65,4 +67,21 @@
  */
 - (void)selectColumnForDate:(NSDate *)date;
 
+-(NSArray*)dateButtonsFromDate:(NSDate*)fromDate toDate:(NSDate*)toDate thatAreIncluded:(BOOL)selectDatesThatFallBetweenPeriod;
+
+-(void)setColourOfDatesFrom:(NSDate*)from toDate:(NSDate*)to toColour:(CalendarHighlightColour)colour;
+
+/**
+ * Finds the first date this month in this row. This does not return days that are carried over from the previous month
+ */
+@property (nonatomic,readonly) NSDate* firstDateThisMonth;
+/**
+ * Finds the last date this month in this row. This does not return days that are carried over from the next month
+ */
+@property (nonatomic,readonly) NSDate* lastDateThisMonth;
+
+/**
+ * Returns a date range of buttons that do not overlap the to and from date
+ */
+-(NSArray*)dateRangeThatAreNotContainedWithinFromDate:(NSDate*)fromDate toDate:(NSDate*)toDate;
 @end

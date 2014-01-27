@@ -10,9 +10,13 @@
 #import "TSQCalendarView.h"
 #import "TSQCalendarMonthHeaderCell.h"
 #import "TSQCalendarRowCell.h"
+#import "DateButton.h"
+#import "OSHighlightedDate.h"
 
 @interface TSQCalendarView () <UITableViewDataSource, UITableViewDelegate>
-
+{
+    NSMutableArray* highlightedDates;
+}
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) TSQCalendarMonthHeaderCell *headerView; // nil unless pinsHeaderToTop == YES
 
@@ -20,6 +24,90 @@
 
 
 @implementation TSQCalendarView
+
+
+#pragma mark -
+#pragma mark Highlighted date management
+
+-(void)highlightDateRangeFrom:(NSDate*)from toDate:(NSDate*)to withColour:(CalendarHighlightColour)colour
+{
+    OSHighlightedDate* existing = [self highlightedDateForDateRangeFrom:from toDate:to];
+    
+    
+    if (existing)
+    {
+        [NSException raise:@"Overlapping range" format:@"Cannot highlight that range because there is an existing range: %@",existing];
+    }
+    
+    OSHighlightedDate* date = [[OSHighlightedDate alloc] init];
+    
+    date.dateFrom = from;
+    date.dateTo = to;
+    date.colour = colour;
+ 
+    if (!highlightedDates)
+        highlightedDates = [[NSMutableArray alloc] init];
+    [highlightedDates addObject:date];
+    
+    [self highlightOrDehighlightDatesStartDate:from toFinishDate:to highlightColour:colour];
+    
+    
+}
+
+
+-(NSString*)dateStringFromDate:(NSDate*)date
+{
+    NSDate *localDate = date;
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
+    dateFormatter.dateFormat = @"dd/MM/yy";
+    
+    NSString *dateString = [dateFormatter stringFromDate: localDate];
+    
+    return dateString;
+}
+
+
+-(OSHighlightedDate*)highlightedDateForDateRangeFrom:(NSDate*)startDate1 toDate:(NSDate*)endDate1
+{
+    for (OSHighlightedDate* date in highlightedDates)
+    {
+        NSTimeInterval startDate1MS = [startDate1 timeIntervalSince1970];
+
+        NSTimeInterval endDate1MS = [endDate1 timeIntervalSince1970];
+        
+        NSTimeInterval startDate2MS = [date.dateFrom timeIntervalSince1970];
+
+        NSTimeInterval endDate2MS = [date.dateTo timeIntervalSince1970];
+        
+        if (startDate1MS <= endDate2MS && endDate1MS >=startDate2MS)
+        {
+//            NSLog(@"Matched");
+//            NSLog(@"Highlighted Date: %@ - %@", [self dateStringFromDate:date.dateFrom],[self dateStringFromDate:date.dateTo]);
+//            NSLog(@"Range check Date: %@ - %@\n\n", [self dateStringFromDate:startDate1],[self dateStringFromDate:endDate1]);
+
+            return date;
+        }
+        
+//        NSLog(@"Highlighted Date: %@ - %@", [self dateStringFromDate:date.dateFrom],[self dateStringFromDate:date.dateTo]);
+//        NSLog(@"Range check Date: %@ - %@\n\n", [self dateStringFromDate:startDate1],[self dateStringFromDate:endDate1]);
+
+    }
+    
+    
+    return nil;
+}
+
+-(void)clearAllHighlights
+{
+    [highlightedDates removeAllObjects];
+    
+    [self.tableView reloadData];
+    
+}
+
+#pragma mark -
+#pragma mark Init
+
 
 - (id)initWithCoder:(NSCoder *)aDecoder;
 {
@@ -52,7 +140,18 @@
     _tableView.delegate = self;
     _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     _tableView.autoresizingMask = UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth;
-    [self addSubview:_tableView];    
+    [self addSubview:_tableView];
+    
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"MM dd, yyyy"];
+    NSDate *date = [dateFormatter dateFromString:@"January 01, 2014"];
+    
+    NSDate* endDate = [date dateByAddingTimeInterval:60*60*24*30];
+    [self highlightDateRangeFrom:date toDate:endDate withColour:CalendarHighlightColourThree];
+    
+    date = [endDate dateByAddingTimeInterval:60*60*24];
+    endDate = [date dateByAddingTimeInterval:60*60*24*30];
+    [self highlightDateRangeFrom:date toDate:endDate withColour:CalendarHighlightColourFour];
 }
 
 - (void)dealloc;
@@ -128,6 +227,8 @@
     // clamp to beginning of its day
     NSDate *startOfDay = [self clampDate:newSelectedDate toComponents:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit];
     
+ 
+    
     if ([self.delegate respondsToSelector:@selector(calendarView:shouldSelectDate:)] && ![self.delegate calendarView:self shouldSelectDate:startOfDay]) {
         return;
     }
@@ -170,6 +271,84 @@
     return cell;
 }
 
+
+
+
+-(void)highlightOrDehighlightDatesStartDate:(NSDate*)startDate toFinishDate:(NSDate*)endDate highlightColour:(CalendarHighlightColour)colour
+{
+    NSDate* start =  [self clampDate:startDate toComponents:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit];
+    NSDate* end = [self clampDate:endDate toComponents:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit];
+    
+    
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    NSDateComponents *components = [calendar components:NSDayCalendarUnit
+                                               fromDate:start
+                                                 toDate:end
+                                                options:0];
+    
+    NSInteger daysBetween = components.day;
+    NSInteger incDays = 1;
+    NSDate* date = nil;
+    
+    TSQCalendarRowCell* previousRow=nil;
+    
+    while(daysBetween > 0)
+    {
+        if (!date)
+        {
+            date = start;
+            
+        }
+        else
+        {
+            daysBetween -= incDays;
+            
+            if (daysBetween < 0)
+                incDays = daysBetween + incDays;
+            
+            date = [date dateByAddingTimeInterval:60*60*24*incDays];
+            
+        }
+        
+        TSQCalendarRowCell* row = [self cellForRowAtDate:date];
+
+        if (previousRow != row && row != nil)
+        {
+            NSLog(@"%@",row);
+          
+            [row setColourOfDatesFrom:start toDate:end toColour:colour];
+
+            
+        }
+        
+        previousRow = row;
+        
+    }
+    
+}
+
+//
+//-(void)highlightDaysFromStartDate:(NSDate*)startDate toFinishDate:(NSDate*)endDate
+//{
+//    //check whether we need to dehighlight
+//    if (_highlightedDateStart != nil && _highlightedDateEnd != nil)
+//    {
+//        [self highlightOrDehighlightDatesStartDate:_highlightedDateStart toFinishDate:_highlightedDateEnd shouldHighlight:NO];
+//    }
+//    
+//    // clamp to beginning of its day
+//    _highlightedDateStart = [self clampDate:startDate toComponents:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit];
+//    _highlightedDateEnd = [self clampDate:endDate toComponents:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit];
+//    
+//    
+//    //Now highlight the new rows
+//    [self highlightOrDehighlightDatesStartDate:_highlightedDateStart toFinishDate:_highlightedDateEnd shouldHighlight:YES];
+//    
+//}
+//
+
+
+
 #pragma mark Calendar calculations
 
 - (NSDate *)firstOfMonthForSection:(NSInteger)section;
@@ -181,7 +360,23 @@
 
 - (TSQCalendarRowCell *)cellForRowAtDate:(NSDate *)date;
 {
-    return (TSQCalendarRowCell *)[self.tableView cellForRowAtIndexPath:[self indexPathForRowAtDate:date]];
+    @try {
+        NSIndexPath* path = [self indexPathForRowAtDate:date];
+        int numRows = [self tableView:self.tableView numberOfRowsInSection:path.section];
+        
+        int row = path.row;
+        if (row < numRows )
+            return (TSQCalendarRowCell *)[self.tableView cellForRowAtIndexPath:path];
+        else
+            return nil;
+    }
+    @catch (NSException *exception) {
+        
+    }
+    @finally {
+        
+    }
+   return nil;
 }
 
 - (NSInteger)sectionForDate:(NSDate *)date;
@@ -280,12 +475,85 @@
         NSDateComponents *dateComponents = [NSDateComponents new];
         dateComponents.day = 1 - ordinalityOfFirstDay;
         dateComponents.week = indexPath.row - (self.pinsHeaderToTop ? 0 : 1);
-        [(TSQCalendarRowCell *)cell setBeginningDate:[self.calendar dateByAddingComponents:dateComponents toDate:firstOfMonth options:0]];
+        NSDate* rowBeginDate =[self.calendar dateByAddingComponents:dateComponents toDate:firstOfMonth options:0];
+        [(TSQCalendarRowCell *)cell setBeginningDate:rowBeginDate];
         [(TSQCalendarRowCell *)cell selectColumnForDate:self.selectedDate];
         
         BOOL isBottomRow = (indexPath.row == [self tableView:tableView numberOfRowsInSection:indexPath.section] - (self.pinsHeaderToTop ? 0 : 1));
         [(TSQCalendarRowCell *)cell setBottomRow:isBottomRow];
+        
+        TSQCalendarRowCell* row = (TSQCalendarRowCell *)cell;
+        
+        NSDate* rowStart = [row firstDateThisMonth];
+        NSDate* rowEnd = [row lastDateThisMonth];
+        
+//        if ([rowStart timeIntervalSince1970] > [rowEnd timeIntervalSince1970])
+//        {
+//            for (DateButton* button in row.dayButtons)
+//            {
+//                NSLog(@"Button: %@",button.date);
+//            }
+//            rowStart = [row firstDateThisMonth];
+//            rowEnd = [row lastDateThisMonth];
+//        }
+        
+        OSHighlightedDate* highlight = [self highlightedDateForDateRangeFrom:rowStart toDate:rowEnd];
+        
+        if (highlight)
+        {
+            
+            while(true)
+            {
+                [row setColourOfDatesFrom:highlight.dateFrom toDate:highlight.dateTo toColour:highlight.colour];
+                
+                //Since not all cells of this row might have been coloured, check the re
+                NSArray* datesNotHighlightedByPreviousOperation = [row dateRangeThatAreNotContainedWithinFromDate:highlight.dateFrom toDate:highlight.dateTo];
+                
+               
+                //check if there wwere any cells that werent highlighted
+                if (datesNotHighlightedByPreviousOperation.count == 1)
+                {
+                    rowStart = rowEnd = datesNotHighlightedByPreviousOperation[0];
+                    
+                }
+                else if(datesNotHighlightedByPreviousOperation.count ==2)
+                {
+                    rowStart = datesNotHighlightedByPreviousOperation[0];
+                    rowEnd = datesNotHighlightedByPreviousOperation[1];
+                }
+                else
+                    break;
+                
+                
+                //we need to another check
+                if (rowStart)
+                {
+                    highlight = [self highlightedDateForDateRangeFrom:rowStart toDate:rowEnd];
+                    
+                    if (!highlight)
+                    {
+                        [row setColourOfDatesFrom:rowStart toDate:rowEnd toColour:CalendarHighlightColourNone];
+                        break;
+                    }
+                }
+            }
+            
+        }
+        else
+        {
+            
+            NSArray* buttons =  row.dayButtons;//[row dateButtonsFromDate:_highlightedDateStart toDate:_highlightedDateEnd];
+            
+            for (DateButton* button in buttons)
+            {
+                button.backgroundColor = CalendarHighlightColourNone;
+            }
+
+        }
+
+        
     }
+    
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath;

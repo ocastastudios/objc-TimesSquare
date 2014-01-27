@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8377837218916C37008DE2AD /* DateButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 8377837018916C37008DE2AD /* DateButton.h */; };
+		8377837318916C37008DE2AD /* DateButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 8377837118916C37008DE2AD /* DateButton.m */; };
+		8377845618928DDE008DE2AD /* OSHighlightedDate.h in Headers */ = {isa = PBXBuildFile; fileRef = 8377845418928DDE008DE2AD /* OSHighlightedDate.h */; };
+		8377845718928DDE008DE2AD /* OSHighlightedDate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8377845518928DDE008DE2AD /* OSHighlightedDate.m */; };
+		8377845D1892938D008DE2AD /* OSHighlightColour.h in Headers */ = {isa = PBXBuildFile; fileRef = 8377845B1892938D008DE2AD /* OSHighlightColour.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A806805F16700FD70071C71E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A806805E16700FD70071C71E /* Foundation.framework */; };
 		A806808E167010030071C71E /* TSQCalendarCell.m in Sources */ = {isa = PBXBuildFile; fileRef = A8068087167010030071C71E /* TSQCalendarCell.m */; };
 		A8068090167010030071C71E /* TSQCalendarMonthHeaderCell.m in Sources */ = {isa = PBXBuildFile; fileRef = A8068089167010030071C71E /* TSQCalendarMonthHeaderCell.m */; };
@@ -33,6 +38,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8377837018916C37008DE2AD /* DateButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DateButton.h; sourceTree = "<group>"; };
+		8377837118916C37008DE2AD /* DateButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DateButton.m; sourceTree = "<group>"; };
+		8377845418928DDE008DE2AD /* OSHighlightedDate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OSHighlightedDate.h; sourceTree = "<group>"; };
+		8377845518928DDE008DE2AD /* OSHighlightedDate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OSHighlightedDate.m; sourceTree = "<group>"; };
+		8377845B1892938D008DE2AD /* OSHighlightColour.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OSHighlightColour.h; sourceTree = "<group>"; };
 		A806805B16700FD70071C71E /* libTimesSquare.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTimesSquare.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A806805E16700FD70071C71E /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		A806806216700FD70071C71E /* TimesSquare-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TimesSquare-Prefix.pch"; sourceTree = "<group>"; };
@@ -104,6 +114,11 @@
 				A806808C167010030071C71E /* TSQCalendarView.h */,
 				A806808D167010030071C71E /* TSQCalendarView.m */,
 				A806806116700FD70071C71E /* Supporting Files */,
+				8377837018916C37008DE2AD /* DateButton.h */,
+				8377837118916C37008DE2AD /* DateButton.m */,
+				8377845418928DDE008DE2AD /* OSHighlightedDate.h */,
+				8377845518928DDE008DE2AD /* OSHighlightedDate.m */,
+				8377845B1892938D008DE2AD /* OSHighlightColour.h */,
 			);
 			path = TimesSquare;
 			sourceTree = "<group>";
@@ -123,11 +138,14 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8377845618928DDE008DE2AD /* OSHighlightedDate.h in Headers */,
 				EFD8DE6D167AF77B00F87FBE /* TimesSquare.h in Headers */,
 				EFD8DE6E167AF78100F87FBE /* TSQCalendarCell.h in Headers */,
+				8377837218916C37008DE2AD /* DateButton.h in Headers */,
 				EFD8DE6F167AF78600F87FBE /* TSQCalendarMonthHeaderCell.h in Headers */,
 				EFD8DE70167AF78C00F87FBE /* TSQCalendarRowCell.h in Headers */,
 				EFD8DE71167AF79000F87FBE /* TSQCalendarView.h in Headers */,
+				8377845D1892938D008DE2AD /* OSHighlightColour.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,9 +220,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				A806808E167010030071C71E /* TSQCalendarCell.m in Sources */,
+				8377837318916C37008DE2AD /* DateButton.m in Sources */,
 				A8068090167010030071C71E /* TSQCalendarMonthHeaderCell.m in Sources */,
 				A8068092167010030071C71E /* TSQCalendarRowCell.m in Sources */,
 				A8068094167010030071C71E /* TSQCalendarView.m in Sources */,
+				8377845718928DDE008DE2AD /* OSHighlightedDate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

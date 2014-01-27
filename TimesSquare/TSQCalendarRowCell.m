@@ -8,15 +8,15 @@
 //  which Square, Inc. licenses this file to you.
 
 #import "TSQCalendarRowCell.h"
+
+#import "DateButton.h"
 #import "TSQCalendarView.h"
-
-
 @interface TSQCalendarRowCell ()
 
-@property (nonatomic, strong) NSArray *dayButtons;
+
 @property (nonatomic, strong) NSArray *notThisMonthButtons;
-@property (nonatomic, strong) UIButton *todayButton;
-@property (nonatomic, strong) UIButton *selectedButton;
+@property (nonatomic, strong) DateButton *todayButton;
+@property (nonatomic, strong) DateButton *selectedButton;
 
 @property (nonatomic, assign) NSInteger indexOfTodayButton;
 @property (nonatomic, assign) NSInteger indexOfSelectedButton;
@@ -55,7 +55,7 @@
 {
     NSMutableArray *dayButtons = [NSMutableArray arrayWithCapacity:self.daysInWeek];
     for (NSUInteger index = 0; index < self.daysInWeek; index++) {
-        UIButton *button = [[UIButton alloc] initWithFrame:self.contentView.bounds];
+        DateButton *button = [[DateButton alloc] initWithFrame:self.contentView.bounds];
         [button addTarget:self action:@selector(dateButtonPressed:) forControlEvents:UIControlEventTouchDown];
         [dayButtons addObject:button];
         [self.contentView addSubview:button];
@@ -69,7 +69,7 @@
 {
     NSMutableArray *notThisMonthButtons = [NSMutableArray arrayWithCapacity:self.daysInWeek];
     for (NSUInteger index = 0; index < self.daysInWeek; index++) {
-        UIButton *button = [[UIButton alloc] initWithFrame:self.contentView.bounds];
+        DateButton *button = [[DateButton alloc] initWithFrame:self.contentView.bounds];
         [notThisMonthButtons addObject:button];
         [self.contentView addSubview:button];
         [self configureButton:button];
@@ -84,7 +84,7 @@
 
 - (void)createTodayButton;
 {
-    self.todayButton = [[UIButton alloc] initWithFrame:self.contentView.bounds];
+    self.todayButton = [[DateButton alloc] initWithFrame:self.contentView.bounds];
     [self.contentView addSubview:self.todayButton];
     [self configureButton:self.todayButton];
     [self.todayButton addTarget:self action:@selector(todayButtonPressed:) forControlEvents:UIControlEventTouchDown];
@@ -98,7 +98,7 @@
 
 - (void)createSelectedButton;
 {
-    self.selectedButton = [[UIButton alloc] initWithFrame:self.contentView.bounds];
+    self.selectedButton = [[DateButton alloc] initWithFrame:self.contentView.bounds];
     [self.contentView addSubview:self.selectedButton];
     [self configureButton:self.selectedButton];
     
@@ -111,6 +111,118 @@
     
     self.selectedButton.titleLabel.shadowOffset = CGSizeMake(0.0f, -1.0f / [UIScreen mainScreen].scale);
     self.indexOfSelectedButton = -1;
+}
+
+/**
+ * Returns a date range of buttons that do not overlap the to and from date
+ */
+-(NSArray*)dateRangeThatAreNotContainedWithinFromDate:(NSDate*)fromDate toDate:(NSDate*)toDate
+{
+    NSMutableArray* output = [NSMutableArray new];
+    
+    NSArray* buttonsNotInRange = [self dateButtonsFromDate:fromDate toDate:toDate thatAreIncluded:NO];
+    
+    if (buttonsNotInRange.count==1)
+    {
+        NSDate* date1 = ((DateButton*)buttonsNotInRange[0]).date;
+
+        if (date1)
+            [output addObject:((DateButton*)buttonsNotInRange[0]).date];
+        return output;
+    }
+    else if(buttonsNotInRange.count>=2)
+    {
+        NSDate* date1 = ((DateButton*)buttonsNotInRange[0]).date;
+        NSDate* date2 =((DateButton*)buttonsNotInRange.lastObject).date;
+        
+        if (date1)
+            [output addObject:date1];
+        if(date2)
+            [output addObject:date2];
+        return output;
+    }
+    else
+        return nil;
+    
+}
+
+
+-(NSArray*)dateButtonsFromDate:(NSDate*)fromDate toDate:(NSDate*)toDate thatAreIncluded:(BOOL)selectDatesThatFallBetweenPeriod
+{
+    NSTimeInterval fromMS = [fromDate timeIntervalSince1970];
+    NSTimeInterval toMS = [toDate timeIntervalSince1970];
+    NSMutableArray* output = [[NSMutableArray alloc] init];
+    
+    for (DateButton* dateButton in self.dayButtons)
+    {
+        NSTimeInterval buttonDateMS = [dateButton.date timeIntervalSince1970];
+        
+        if (buttonDateMS >= fromMS && buttonDateMS <= toMS)
+        {
+            if (selectDatesThatFallBetweenPeriod)
+                [output addObject:dateButton];
+        }
+        else
+        {
+            if (!selectDatesThatFallBetweenPeriod)
+                [output addObject:dateButton];
+            
+        }
+    }
+    
+    return output;
+}
+
+-(void)setColourOfDatesFrom:(NSDate*)from toDate:(NSDate*)to toColour:(CalendarHighlightColour)colour
+{
+    NSArray* highlighted = [self dateButtonsFromDate:from toDate:to thatAreIncluded:YES];
+    
+    for (DateButton* button in highlighted)
+    {
+        [self highlightDateButton:button withColour:colour];
+    }
+   
+    
+}
+
+-(UIColor*)colourFromEnumValue:(CalendarHighlightColour)colourValue
+{
+    switch (colourValue)
+    {
+        case CalendarHighlightColourNone:
+        {
+            return CAL_COLOUR_NONE;
+        }
+        case CalendarHighlightColourOne:
+        {
+            return CAL_COLOUR_1;
+        }
+        case CalendarHighlightColourTwo:
+        {
+            return CAL_COLOUR_2;
+        }
+        case CalendarHighlightColourThree:
+        {
+            return CAL_COLOUR_3;
+        }
+        case CalendarHighlightColourFour:
+        {
+            return CAL_COLOUR_4;
+        }
+        case CalendarHighlightColourFive:
+        {
+            return CAL_COLOUR_5;
+        }
+        default:
+            return [UIColor clearColor];
+    }
+}
+
+
+-(void)highlightDateButton:(DateButton*)button withColour:(CalendarHighlightColour)colour
+{
+    button.backgroundColor = [self colourFromEnumValue:colour];
+    
 }
 
 - (void)setBeginningDate:(NSDate *)date;
@@ -140,25 +252,34 @@
         [self.notThisMonthButtons[index] setTitle:title forState:UIControlStateNormal];
         [self.notThisMonthButtons[index] setAccessibilityLabel:accessibilityLabel];
         
+        ((DateButton*)self.dayButtons[index]).date = nil;
         NSDateComponents *thisDateComponents = [self.calendar components:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit fromDate:date];
         
         [self.dayButtons[index] setHidden:YES];
         [self.notThisMonthButtons[index] setHidden:YES];
 
         NSInteger thisDayMonth = thisDateComponents.month;
-        if (self.monthOfBeginningDate != thisDayMonth) {
+        if (self.monthOfBeginningDate != thisDayMonth)
+        {
             [self.notThisMonthButtons[index] setHidden:NO];
-        } else {
+             ((DateButton*)self.notThisMonthButtons[index]).date = nil;
+        }
+        else {
 
-            if ([self.todayDateComponents isEqual:thisDateComponents]) {
+            if ([self.todayDateComponents isEqual:thisDateComponents])
+            {
                 self.todayButton.hidden = NO;
                 [self.todayButton setTitle:title forState:UIControlStateNormal];
                 [self.todayButton setAccessibilityLabel:accessibilityLabel];
                 self.indexOfTodayButton = index;
-            } else {
-                UIButton *button = self.dayButtons[index];
+                
+            }
+            else
+            {
+                DateButton *button = self.dayButtons[index];
                 button.enabled = ![self.calendarView.delegate respondsToSelector:@selector(calendarView:shouldSelectDate:)] || [self.calendarView.delegate calendarView:self.calendarView shouldSelectDate:date];
                 button.hidden = NO;
+                button.date = date;
             }
         }
 
@@ -179,6 +300,8 @@
     
     [self setNeedsLayout];
 }
+
+
 
 - (IBAction)dateButtonPressed:(id)sender;
 {
@@ -243,7 +366,7 @@
     self.indexOfSelectedButton = newIndexOfSelectedButton;
     
     if (newIndexOfSelectedButton >= 0) {
-        self.selectedButton.hidden = NO;
+       // self.selectedButton.hidden = NO;
         [self.selectedButton setTitle:[self.dayButtons[newIndexOfSelectedButton] currentTitle] forState:UIControlStateNormal];
         [self.selectedButton setAccessibilityLabel:[self.dayButtons[newIndexOfSelectedButton] accessibilityLabel]];
     } else {
@@ -293,6 +416,82 @@
         self.todayDateComponents = [self.calendar components:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit fromDate:[NSDate date]];
     }
     return _todayDateComponents;
+}
+
+-(NSString*)dateStringFromDate:(NSDate*)date
+{
+    NSDate *localDate = date;
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc]init];
+    dateFormatter.dateFormat = @"dd/MM/yy";
+    
+    NSString *dateString = [dateFormatter stringFromDate: localDate];
+    
+    return dateString;
+}
+
+
+
+-(NSDate*)firstDateThisMonth
+{
+    //Go through all buttons and find the first date this month, i.e not a day from the previous month
+    for(int i=0;i<self.dayButtons.count;i++)
+    {
+        NSDate* date = ((DateButton*)self.dayButtons[i]).date;
+        if (date)
+            return date;
+    }
+    
+    return nil;
+}
+
+-(NSDate*)lastDateThisMonth
+{
+    int count = self.dayButtons.count;
+    //Go through all buttons and find the last date this month, i.e not a day from the next month
+    for(int i=count-1;i>0;i--)
+    {
+        NSDate* date = ((DateButton*)self.dayButtons[i]).date;
+        
+        if (date)
+            return date;
+    }
+    
+    return nil;
+}
+
+-(NSString *)description
+{
+    DateButton* firstDay = self.dayButtons[0];
+    DateButton* lastDay = self.dayButtons.lastObject;
+    
+    NSString* firstDateStr=@"";
+    NSString* lastDateStr=@"";
+    
+    if (firstDay.date)
+    {
+
+        firstDateStr = [self dateStringFromDate:firstDay.date];
+    }
+    else
+    {
+        firstDay = _notThisMonthButtons[0];
+        firstDateStr = [[NSString alloc] initWithFormat:@"(Last Month) %@", [self dateStringFromDate:firstDay.date]];
+    }
+
+    
+    if (lastDay.date)
+    {
+        
+        lastDateStr = [self dateStringFromDate:lastDay.date];
+    }
+    else
+    {
+        lastDay = _notThisMonthButtons.lastObject;
+        lastDateStr = [[NSString alloc] initWithFormat:@"(Next Month) %@", [self dateStringFromDate:lastDay.date]];
+    }
+
+    
+    return [[NSString alloc] initWithFormat:@"Row: %@ to %@", firstDateStr, lastDateStr];
 }
 
 @end
